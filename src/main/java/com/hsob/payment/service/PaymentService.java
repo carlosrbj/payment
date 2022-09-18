@@ -1,21 +1,26 @@
 package com.hsob.payment.service;
 
 import com.hsob.documentdb.payment.Payment;
+import com.hsob.documentdb.payment.QPayment;
 import com.hsob.documentdb.payment.Status;
 import com.hsob.payment.dto.PaymentDto;
 import com.hsob.payment.httpClient.OrderClient;
 import com.hsob.payment.repository.PaymentRepository;
+import com.querydsl.jpa.impl.JPAQuery;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
+import javax.persistence.PersistenceContext;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
-public class PaymentService {
+public class PaymentService{
     @Autowired
     private PaymentRepository paymentRepository;
     @Autowired
@@ -23,17 +28,39 @@ public class PaymentService {
     @Autowired
     private OrderClient orderClient;
 
-    public Page<PaymentDto> getAll(Pageable pageable) {
-        return paymentRepository
-                .findAll(pageable)
-                .map(p -> modelMapper.map(p, PaymentDto.class));
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public List<PaymentDto> getAll(Pageable pageable) {
+        List<PaymentDto> paymentDtoList = new ArrayList<>();
+//        return paymentRepository
+//                .findAll(pageable)
+//                .map(p -> modelMapper.map(p, PaymentDto.class));
+
+        QPayment payment = QPayment.payment;
+        JPAQuery<Payment> results = new JPAQuery<>(entityManager).select(payment)
+                .from(payment)
+                .fetchAll();
+        for (Payment result : results.fetch()){
+            PaymentDto paymentDto = modelMapper.map(result, PaymentDto.class);
+            paymentDtoList.add(paymentDto);
+        }
+
+        return paymentDtoList;
     }
 
     public PaymentDto getById(Long id) {
-        Payment payment = paymentRepository.findById(id)
-                .orElseThrow(EntityNotFoundException::new);
+//        Payment payment = paymentRepository.findById(id)
+//                .orElseThrow(EntityNotFoundException::new);
 
-        return modelMapper.map(payment, PaymentDto.class);
+        QPayment payment = QPayment.payment;
+        JPAQuery<Payment> query = new JPAQuery<>(entityManager);
+        Payment result = query.select(payment)
+                .from(payment)
+                .where(payment.id.eq(id))
+                .fetchOne();
+
+        return modelMapper.map(result, PaymentDto.class);
     }
 
     public PaymentDto savePayment(PaymentDto dto) {

@@ -14,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/payment")
@@ -22,7 +23,7 @@ public class PaymentController {
     private PaymentService paymentService;
 
     @GetMapping
-    public Page<PaymentDto> getAll(@PageableDefault(size = 10) Pageable pageable) {
+    public List<PaymentDto> getAll(@PageableDefault(size = 10) Pageable pageable) {
         return paymentService.getAll(pageable);
     }
 
